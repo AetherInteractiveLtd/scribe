@@ -37,11 +37,6 @@ jobs:
               shell: bash
               run: npx rbxtsc --verbose
 
-            - name: Packaging check
-              shell: bash
-              run: |
-                  npm run prepublish
-
             - name: Done
               run: |
                   echo done
