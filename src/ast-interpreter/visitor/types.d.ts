@@ -1,5 +1,5 @@
-import { ExpressionVisitor, StatementVisitor } from "@aetherinteractiveltd/mkscribe";
-import { TokenLiteral } from "@aetherinteractiveltd/mkscribe/out/mkscribe/scanner/types";
+import { ExpressionVisitor, StatementVisitor } from "@aethergames/mkscribe";
+import { TokenLiteral } from "@aethergames/mkscribe/out/mkscribe/scanner/types";
 
 export declare type RefNode = {
 	refValue: TokenLiteral;

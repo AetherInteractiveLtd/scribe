@@ -1,4 +1,4 @@
-import { MkScribe } from "@aetherinteractiveltd/mkscribe";
+import { MkScribe } from "@aethergames/mkscribe";
 import { ScribeEnviroment } from "../types";
 import {
 	DialogCallbackInput,
@@ -6,7 +6,7 @@ import {
 	ScribeProgramProperties,
 	ScribeRuntimeImplementation,
 } from "./types";
-import { TokenLiteral } from "@aetherinteractiveltd/mkscribe/out/mkscribe/scanner/types";
+import { TokenLiteral } from "@aethergames/mkscribe/out/mkscribe/scanner/types";
 import { ScribeVisitor, StatusInterpretationCode } from "./visitor";
 
 export class Runtime implements ScribeRuntimeImplementation {

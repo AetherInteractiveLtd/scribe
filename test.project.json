@@ -16,8 +16,8 @@
 						"$path": "node_modules/@rbxts"
 					},
 
-					"@aetherinteractiveltd": {
-						"$path": "node_modules/@aetherinteractiveltd"
+					"@aethergames": {
+						"$path": "node_modules/@aethergames"
 					}
 				}
 			}

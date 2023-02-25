@@ -1,5 +1,5 @@
-import { Statement } from "@aetherinteractiveltd/mkscribe";
-import { TokenLiteral } from "@aetherinteractiveltd/mkscribe/out/mkscribe/scanner/types";
+import { Statement } from "@aethergames/mkscribe";
+import { TokenLiteral } from "@aethergames/mkscribe/out/mkscribe/scanner/types";
 import { StatusInterpretationCode } from "./visitor";
 
 declare type ScribeProperties = "title" | "description";

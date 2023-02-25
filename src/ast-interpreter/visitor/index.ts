@@ -1,4 +1,4 @@
-import { ExpressionType, StatementType, TokenType } from "@aetherinteractiveltd/mkscribe";
+import { ExpressionType, StatementType, TokenType } from "@aethergames/mkscribe";
 import {
 	ExpressionStatement,
 	ActorStatement,
@@ -28,8 +28,8 @@ import {
 	EchoStatement,
 	InteractStatement,
 	ArrayExpression,
-} from "@aetherinteractiveltd/mkscribe/out/mkscribe/ast/types";
-import { TokenLiteral } from "@aetherinteractiveltd/mkscribe/out/mkscribe/scanner/types";
+} from "@aethergames/mkscribe/out/mkscribe/ast/types";
+import { TokenLiteral } from "@aethergames/mkscribe/out/mkscribe/scanner/types";
 import { ScribeEnviroment } from "../../types";
 import { DialogCallbackInput, OptionStructure, PipeToCallbackInput } from "../types";
 import { EventListener } from "../utils";
