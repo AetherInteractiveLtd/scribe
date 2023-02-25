@@ -1,5 +1,5 @@
 {
-	"name": "@rbxts/scribe",
+	"name": "@aethergames/scribe",
 	"version": "1.0.0",
 	"description": "Scribe, a scripting language used to describe Dialogues or Quests behavior.",
 	"main": "out/init.lua",
@@ -11,7 +11,7 @@
 		"test:serve": "rojo serve ./test.project.json",
 		"test:rojo": "mkdir build & npm run test:build && rojo build -o ./build/test.rbxlx test.project.json",
 		"test:run": "npm run prepublish && npm run test:serve",
-		"prepublish": "npm run build && npm pack --pack-destination=build",
+		"prepublish": "npm run build && mkdir build && npm pack --pack-destination=build",
 		"prepare": "husky install",
 		"test": "npm run test:run"
 	},
@@ -28,8 +28,7 @@
 		"url": "https://github.com/AetherInteractiveLtd/scribe.git"
 	},
 	"publishConfig": {
-		"access": "public",
-		"registry": "https://npm.pkg.github.com/@AetherInteractiveLtd"
+		"access": "public"
 	},
 	"devDependencies": {
 		"@rbxts/compiler-types": "^2.0.4-types.1",
