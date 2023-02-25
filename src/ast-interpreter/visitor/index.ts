@@ -470,9 +470,19 @@ export class ScribeVisitor implements Interpreter {
 	}
 
 	public visitOptionStatement(stmt: OptionStatement): never {
+		let text: TokenLiteral;
+		if (stmt.value) {
+			text = this.evaluate(stmt.value);
+		}
+
+		let metadata: TokenLiteral;
+		if (stmt.metadata) {
+			metadata = this.evaluate(stmt.metadata);
+		}
+
 		return {
-			text: stmt.value,
-			metadata: stmt.metadata,
+			text,
+			metadata,
 			_body: stmt.body,
 		} as never;
 	}

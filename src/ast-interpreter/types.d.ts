@@ -7,8 +7,8 @@ declare type ScribeProperties = "title" | "description";
 export declare type ScribeProgramProperties = Record<string | ScribeProperties, TokenLiteral>;
 
 export declare type OptionStructure = {
-	text: TokenLiteral;
-	metadata: TokenLiteral;
+	text?: TokenLiteral;
+	metadata?: TokenLiteral;
 
 	/** @hidden */
 	_body: Statement;
