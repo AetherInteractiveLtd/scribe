@@ -40,7 +40,7 @@ jobs:
             - name: Packaging check
               shell: bash
               run: |
-                  npm run prepublishOnly
+                  npm run prepublish
 
             - name: Done
               run: |
