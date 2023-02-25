@@ -1,4 +1,4 @@
-import { ExpressionType, StatementType, TokenType } from "@aether-interactive-ltd/mkscribe";
+import { ExpressionType, StatementType, TokenType } from "@aetherinteractiveltd/mkscribe";
 import {
 	ExpressionStatement,
 	ActorStatement,
@@ -17,7 +17,7 @@ import {
 	UnaryExpression,
 	TernaryExpression,
 	VariableExpression,
-	EnviromentAccessor,
+	EnvironmentAccessor,
 	LiteralExpression,
 	GroupingExpression,
 	MetadataExpression,
@@ -28,8 +28,8 @@ import {
 	EchoStatement,
 	InteractStatement,
 	ArrayExpression,
-} from "@aether-interactive-ltd/mkscribe/out/mkscribe/ast/types";
-import { TokenLiteral } from "@aether-interactive-ltd/mkscribe/out/mkscribe/scanner/types";
+} from "@aetherinteractiveltd/mkscribe/out/mkscribe/ast/types";
+import { TokenLiteral } from "@aetherinteractiveltd/mkscribe/out/mkscribe/scanner/types";
 import { ScribeEnviroment } from "../../types";
 import { DialogCallbackInput, OptionStructure, PipeToCallbackInput } from "../types";
 import { EventListener } from "../utils";
@@ -267,7 +267,7 @@ export class ScribeVisitor implements Interpreter {
 		}
 	}
 
-	public visitEnviromentAccessor(expr: EnviromentAccessor): TokenLiteral {
+	public visitEnviromentAccessor(expr: EnvironmentAccessor): TokenLiteral {
 		const lexeme = expr.name.literal as string;
 		return this.env[lexeme.sub(2, lexeme.size())] as TokenLiteral;
 	}

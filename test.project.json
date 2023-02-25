@@ -16,8 +16,8 @@
 						"$path": "node_modules/@rbxts"
 					},
 
-					"@aether-interactive-ltd": {
-						"$path": "node_modules/@aether-interactive-ltd"
+					"@aetherinteractiveltd": {
+						"$path": "node_modules/@aetherinteractiveltd"
 					}
 				}
 			}
