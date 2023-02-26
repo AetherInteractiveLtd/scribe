@@ -1,6 +1,6 @@
 {
 	"name": "@aethergames/scribe",
-	"version": "1.0.0",
+	"version": "0.1.0",
 	"description": "Scribe, a scripting language used to describe Dialogues or Quests behavior.",
 	"main": "out/init.lua",
 	"scripts": {
