@@ -386,7 +386,7 @@ export class ScribeVisitor implements Interpreter {
 		}
 
 		this.records.stores[ref][0] = refValue;
-		this.callbacks.storeChange({ identifier: ref, data: refValue, metadata: metadata as never });
+		this.callbacks.storeChange?.({ identifier: ref, data: refValue, metadata: metadata as never });
 		this.tracker.event.notify(ref);
 	}
 
@@ -414,7 +414,7 @@ export class ScribeVisitor implements Interpreter {
 		}
 
 		task.spawn(() => {
-			this.callbacks.dialog({
+			this.callbacks.dialog?.({
 				characterIdentifier,
 				text,
 				metadata,
@@ -423,8 +423,6 @@ export class ScribeVisitor implements Interpreter {
 					if (id !== undefined) {
 						this.resolve(options[id - 1]._body);
 					}
-
-					print("Wtf");
 
 					return coroutine.resume(this.interpreterCoroutine);
 				},

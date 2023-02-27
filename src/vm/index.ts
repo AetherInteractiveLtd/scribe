@@ -29,7 +29,6 @@ export class ScribeVM {
 			switch ((instruction = this.read_byte())) {
 				case OpCode.OP_CONSTANT: {
 					const constant: Value = this.read_constant();
-					print(constant);
 
 					break;
 				}
