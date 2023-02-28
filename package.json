@@ -1,6 +1,6 @@
 {
 	"name": "@aethergames/scribe",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "Scribe, a scripting language used to describe Dialogues or Quests behavior.",
 	"main": "out/init.lua",
 	"scripts": {
@@ -12,7 +12,6 @@
 		"test:rojo": "mkdir build & npm run test:build && rojo build -o ./build/test.rbxlx test.project.json",
 		"test:run": "npm run prepublish && npm run test:serve",
 		"prepublish": "npm run build && mkdir build && npm pack --pack-destination=build",
-		"prepare": "husky install",
 		"test": "npm run test:run"
 	},
 	"keywords": [],
