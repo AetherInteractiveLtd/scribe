@@ -2,7 +2,20 @@ import { Statement } from "@aethergames/mkscribe";
 import { TokenLiteral } from "@aethergames/mkscribe/out/mkscribe/scanner/types";
 import { StatusInterpretationCode } from "./visitor";
 
-declare type ScribeProperties = "title" | "description";
+export declare type InteractionJob = {
+	cleanup: RBXScriptConnection | undefined;
+	lastInteraction: number;
+	queue: Array<Statement>;
+};
+
+export declare type ScribeProperties = "title" | "description";
+
+export declare type Objective = {
+	id: number;
+	name: string;
+	desc: string;
+	active: boolean;
+};
 
 export declare type ScribeProgramProperties = Record<string | ScribeProperties, TokenLiteral>;
 
@@ -21,6 +34,11 @@ export declare type DialogCallbackInput = {
 	options: Array<OptionStructure>;
 
 	step: (id?: number) => void;
+};
+
+export declare type ObjectiveChangeCallbackInput = {
+	id: string;
+	description: string;
 };
 
 export declare type PipeToCallbackInput = {
@@ -51,6 +69,13 @@ export interface ScribeRuntimeImplementation {
 	 * Workflow is to set `pipeTo` and `dialogCallback` before running `.start`.
 	 */
 	start(): StatusInterpretationCode;
+
+	getObjective(objective: string): Objective | undefined;
+
+	/**
+	 *
+	 */
+	getCurrentObjective(): Objective | undefined;
 
 	/**
 	 * Retrieve's a property's value.

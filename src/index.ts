@@ -1,13 +1,8 @@
-import { Runtime } from "./ast-interpreter";
-import { ExecutionType, ModuleSource, ScribeEnviroment, StringSource, StringValueSource } from "./types";
-import { ScribeVM } from "./vm";
+import { Runtime } from "./runtime";
+import { ModuleSource, ScribeEnviroment, StringSource, StringValueSource } from "./types";
 
 export namespace Scribe {
-	export function load<T extends ExecutionType>(
-		file: string | StringValue | ModuleScript,
-		env: ScribeEnviroment,
-		executionType: T,
-	): T extends "ast-interpreter" ? Runtime : ScribeVM {
+	export function load(file: string | StringValue | ModuleScript, env: ScribeEnviroment): Runtime {
 		const toRetrieveFrom = typeOf(file);
 		let source!: string;
 
@@ -29,6 +24,6 @@ export namespace Scribe {
 			}
 		}
 
-		return (executionType === "ast-interpreter" ? new Runtime(source, env) : new ScribeVM(source, env)) as never;
+		return new Runtime(source, env);
 	}
 }
