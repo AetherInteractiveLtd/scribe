@@ -1,5 +1,5 @@
 {
-	"name": "rbxts.scribe-as-game",
+	"name": "rbxts-scribe-as-game",
 	"globIgnorePaths": ["**/package.json", "**/tsconfig.json"],
 
 	"tree": {

@@ -10,7 +10,7 @@
 		"test:watch": "rbxtsc -w --verbose --type game --rojo test.project.json",
 		"test:serve": "rojo serve ./test.project.json",
 		"test:rojo": "mkdir build & npm run test:build && rojo build -o ./build/test.rbxlx test.project.json",
-		"test:run": "npm run prepublish && npm run test:serve",
+		"test:run": "npm run test:build && npm run test:serve",
 		"prepublish": "npm run build && mkdir build && npm pack --pack-destination=build",
 		"prepare": "husky install",
 		"test": "npm run test:run"

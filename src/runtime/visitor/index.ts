@@ -352,18 +352,18 @@ export class ScribeVisitor implements Interpreter {
 		const objective = stmt.name.lexeme as string;
 		const objectiveDesc = this.evaluate(stmt.value);
 
+		if (isDefault && this.records.objectives.current === undefined) {
+			this.records.objectives.current = objective;
+		} else {
+			throw `Another objective is already a default one, make sure to not override or have multiple default objectives. ${stmt.name.start}:${stmt.name.end}`;
+		}
+
 		this.records.objectives[objective] = {
 			id: ++this.records.objectivesCurrentId,
 			name: objective,
 			desc: objectiveDesc as string,
 			active: objective === this.records.objectives.current!,
 		};
-
-		if (isDefault && this.records.objectives.current === undefined) {
-			this.records.objectives.current = objective;
-		} else {
-			throw `Another objective is already a default one, make sure to not override or have multiple default objectives. ${stmt.name.start}:${stmt.name.end}`;
-		}
 	}
 
 	public visitStoreStatement(stmt: StoreStatement): void {
