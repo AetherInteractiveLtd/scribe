@@ -354,7 +354,7 @@ export class ScribeVisitor implements Interpreter {
 
 		if (isDefault && this.records.objectives.current === undefined) {
 			this.records.objectives.current = objective;
-		} else {
+		} else if (isDefault && this.records.objectives.current !== undefined) {
 			throw `Another objective is already a default one, make sure to not override or have multiple default objectives. ${stmt.name.start}:${stmt.name.end}`;
 		}
 
