@@ -31,7 +31,13 @@ import {
 } from "@aethergames/mkscribe/out/mkscribe/ast/types";
 import { TokenLiteral } from "@aethergames/mkscribe/out/mkscribe/scanner/types";
 import { ScribeEnviroment } from "../../types";
-import { DialogCallbackInput, OptionStructure, PipeToCallbackInput } from "../types";
+import {
+	DialogCallbackInput,
+	Objective,
+	ObjectiveChangeCallbackInput,
+	OptionStructure,
+	PipeToCallbackInput,
+} from "../types";
 import { EventListener } from "../utils";
 import { Interpreter, RefNode } from "./types";
 
@@ -46,12 +52,14 @@ export class ScribeVisitor implements Interpreter {
 	public refs: Record<string, RefNode>;
 
 	public records: {
+		objectivesCurrentId: 0;
+
 		actors: Record<string, TokenLiteral>;
 		stores: Record<string, [value?: TokenLiteral, metadata?: Array<unknown>]>;
 
 		objectives: {
-			current?: TokenLiteral;
-		} & { [x: string]: TokenLiteral };
+			current?: string;
+		} & { [x: string]: Objective };
 
 		scenes: Record<string, Statement>;
 		interactions: Record<string, Statement>;
@@ -68,8 +76,9 @@ export class ScribeVisitor implements Interpreter {
 	constructor(
 		private readonly ast: Array<Statement>,
 		private readonly callbacks: {
-			dialog: (input: DialogCallbackInput) => void;
-			storeChange: (config: PipeToCallbackInput) => void;
+			onDialog: (input: DialogCallbackInput) => void;
+			onStoreChange: (config: PipeToCallbackInput) => void;
+			onObjectiveChange: (input: ObjectiveChangeCallbackInput) => void;
 		},
 		private env: ScribeEnviroment,
 	) {
@@ -77,6 +86,8 @@ export class ScribeVisitor implements Interpreter {
 		this.refs = {};
 
 		this.records = {
+			objectivesCurrentId: 0,
+
 			actors: {},
 			stores: {},
 			objectives: {},
@@ -267,7 +278,7 @@ export class ScribeVisitor implements Interpreter {
 		}
 	}
 
-	public visitEnviromentAccessor(expr: EnvironmentAccessor): TokenLiteral {
+	public visitEnvironmentAccessor(expr: EnvironmentAccessor): TokenLiteral {
 		const lexeme = expr.name.literal as string;
 		return this.env[lexeme.sub(2, lexeme.size())] as TokenLiteral;
 	}
@@ -305,6 +316,10 @@ export class ScribeVisitor implements Interpreter {
 
 		if (identifier in this.records.objectives) {
 			this.records.objectives.current = identifier;
+			this.callbacks.onObjectiveChange({
+				id: identifier,
+				description: this.records.objectives[identifier].desc,
+			});
 		} else {
 			this.resolve(this.records.scenes[identifier]);
 		}
@@ -337,13 +352,18 @@ export class ScribeVisitor implements Interpreter {
 		const objective = stmt.name.lexeme as string;
 		const objectiveDesc = this.evaluate(stmt.value);
 
-		this.records.objectives[objective] = objectiveDesc;
-
 		if (isDefault && this.records.objectives.current === undefined) {
 			this.records.objectives.current = objective;
-		} else {
+		} else if (isDefault && this.records.objectives.current !== undefined) {
 			throw `Another objective is already a default one, make sure to not override or have multiple default objectives. ${stmt.name.start}:${stmt.name.end}`;
 		}
+
+		this.records.objectives[objective] = {
+			id: ++this.records.objectivesCurrentId,
+			name: objective,
+			desc: objectiveDesc as string,
+			active: objective === this.records.objectives.current!,
+		};
 	}
 
 	public visitStoreStatement(stmt: StoreStatement): void {
@@ -386,7 +406,7 @@ export class ScribeVisitor implements Interpreter {
 		}
 
 		this.records.stores[ref][0] = refValue;
-		this.callbacks.storeChange?.({ identifier: ref, data: refValue, metadata: metadata as never });
+		this.callbacks.onStoreChange?.({ identifier: ref, data: refValue, metadata: metadata as never });
 		this.tracker.event.notify(ref);
 	}
 
@@ -414,7 +434,7 @@ export class ScribeVisitor implements Interpreter {
 		}
 
 		task.spawn(() => {
-			this.callbacks.dialog?.({
+			this.callbacks.onDialog?.({
 				characterIdentifier,
 				text,
 				metadata,
@@ -514,8 +534,9 @@ export class ScribeVisitor implements Interpreter {
 	public visitInteractStatement(stmt: InteractStatement): void {
 		const ref = stmt.identifier.lexeme as string;
 		const refValue = stmt.body;
+		const actor = this.records.actors[ref];
 
-		this.records.interactions[ref] = refValue;
+		this.records.interactions[actor as string] = refValue;
 	}
 
 	public visitEchoStatement(stmt: EchoStatement): void {
