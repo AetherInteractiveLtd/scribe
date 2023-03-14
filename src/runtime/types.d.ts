@@ -3,7 +3,6 @@ import { TokenLiteral } from "@aethergames/mkscribe/out/mkscribe/scanner/types";
 import { StatusInterpretationCode } from "./visitor";
 
 export declare type InteractionJob = {
-	cleanup: RBXScriptConnection | undefined;
 	lastInteraction: number;
 	queue: Array<Statement>;
 };
