@@ -481,16 +481,10 @@ export class ScribeVisitor implements Interpreter {
 	}
 
 	public visitSceneStatement(stmt: SceneStatement): void {
-		const isDefault = stmt.default;
+		const ref = stmt.name.lexeme as string;
+		const refValue = stmt.body;
 
-		if (isDefault) {
-			this.resolve(stmt.body);
-		} else {
-			const ref = stmt.name.lexeme as string;
-			const refValue = stmt.body;
-
-			this.records.scenes[ref] = refValue;
-		}
+		this.records.scenes[ref] = refValue;
 	}
 
 	public visitOptionStatement(stmt: OptionStatement): never {
