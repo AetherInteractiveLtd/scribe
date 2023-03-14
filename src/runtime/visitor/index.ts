@@ -6,7 +6,6 @@ import {
 	StoreStatement,
 	SetStatement,
 	BlockStatement,
-	BlockOfConditionsStatement,
 	DialogueStatement,
 	ConditionStatement,
 	IfStatement,
@@ -28,6 +27,7 @@ import {
 	EchoStatement,
 	InteractStatement,
 	ArrayExpression,
+	DoStatement,
 } from "@aethergames/mkscribe/out/mkscribe/ast/types";
 import { TokenLiteral } from "@aethergames/mkscribe/out/mkscribe/scanner/types";
 import { ScribeEnviroment } from "../../types";
@@ -170,10 +170,6 @@ export class ScribeVisitor implements Interpreter {
 		};
 	}
 
-	/**
-	 * Expressions
-	 */
-
 	public visitBinaryExpression(expr: BinaryExpression): TokenLiteral {
 		let left = this.evaluate(expr.left);
 		let right = this.evaluate(expr.right);
@@ -183,6 +179,8 @@ export class ScribeVisitor implements Interpreter {
 				TokenType.PLUS,
 				TokenType.MINUS,
 				TokenType.STAR,
+				TokenType.EXPONENTIAL,
+				TokenType.MODULUS,
 				TokenType.SLASH,
 				TokenType.GREATER,
 				TokenType.G_E,
@@ -203,6 +201,12 @@ export class ScribeVisitor implements Interpreter {
 
 					case TokenType.STAR:
 						return left * right;
+
+					case TokenType.EXPONENTIAL:
+						return left ** right;
+
+					case TokenType.MODULUS:
+						return left % right;
 
 					case TokenType.SLASH:
 						return left / right;
@@ -327,10 +331,6 @@ export class ScribeVisitor implements Interpreter {
 		return 1;
 	}
 
-	/**
-	 * Statements
-	 */
-
 	public visitExpressionStatement(stmt: ExpressionStatement): void {
 		this.evaluate(stmt.expr);
 	}
@@ -414,8 +414,8 @@ export class ScribeVisitor implements Interpreter {
 		this.resolveBody(stmt.statements);
 	}
 
-	public visitBlockOfConditionsStatement(stmt: BlockOfConditionsStatement): void {
-		this.resolveBody(stmt.conditions);
+	public visitDoStatement(stmt: DoStatement): void {
+		this.resolve(stmt.body);
 	}
 
 	public visitDialogueStatement(stmt: DialogueStatement): never {
@@ -468,23 +468,23 @@ export class ScribeVisitor implements Interpreter {
 
 			if (this.checkTruthiness(check)) {
 				return this.resolve(stmt.body);
-			} else return;
+			} else {
+				if (stmt.else !== undefined) {
+					this.resolve(stmt.else);
+				}
+
+				return;
+			}
 		}
 
 		this.resolve(stmt.body);
 	}
 
 	public visitSceneStatement(stmt: SceneStatement): void {
-		const isDefault = stmt.default;
+		const ref = stmt.name.lexeme as string;
+		const refValue = stmt.body;
 
-		if (isDefault) {
-			this.resolve(stmt.body);
-		} else {
-			const ref = stmt.name.lexeme as string;
-			const refValue = stmt.body;
-
-			this.records.scenes[ref] = refValue;
-		}
+		this.records.scenes[ref] = refValue;
 	}
 
 	public visitOptionStatement(stmt: OptionStatement): never {

@@ -11,7 +11,6 @@ import {
 } from "./types";
 import { TokenLiteral } from "@aethergames/mkscribe/out/mkscribe/scanner/types";
 import { ScribeVisitor, StatusInterpretationCode } from "./visitor";
-import { RunService } from "@rbxts/services";
 
 export class Runtime implements ScribeRuntimeImplementation {
 	public dialogCallback!: (input: DialogCallbackInput) => void;
@@ -102,18 +101,13 @@ export class Runtime implements ScribeRuntimeImplementation {
 	public async interact(id: string): Promise<void> {
 		if (this.interactions.has(id) === false) {
 			this.interactions.set(id, {
-				cleanup: undefined,
 				lastInteraction: 0,
 				queue: new Array(),
 			});
 		}
 
 		// eslint-disable-next-line prefer-const
-		let { cleanup, lastInteraction, queue } = this.interactions.get(id)!;
-
-		if (cleanup !== undefined) {
-			cleanup.Disconnect();
-		}
+		let { lastInteraction, queue } = this.interactions.get(id)!;
 
 		const interaction = this.interpreter.records.interactions[id];
 		if (os.clock() - lastInteraction > this.interactionsCooldown && queue.size() === 0) {
@@ -126,8 +120,6 @@ export class Runtime implements ScribeRuntimeImplementation {
 			// eslint-disable-next-line no-constant-condition
 			while (true) {
 				if (os.clock() - lastInteraction > this.interactionsCooldown && queue[1] === interaction) {
-					this.clean(id);
-
 					return this.interpreter.resolve(interaction);
 				} else {
 					task.wait();
@@ -136,23 +128,7 @@ export class Runtime implements ScribeRuntimeImplementation {
 		}
 	}
 
-	private clean(id: string): void {
-		const interactionJob = this.interactions.get(id);
-
-		if (interactionJob !== undefined) {
-			const { cleanup, lastInteraction, queue } = interactionJob;
-
-			if (cleanup !== undefined) {
-				interactionJob.cleanup = RunService.PostSimulation.Connect(() => {
-					if (os.clock() - lastInteraction > this.interactionsCooldown && queue.size() === 0) {
-						if (this.interactions.has(id)) {
-							this.interactions.delete(id);
-						}
-
-						cleanup.Disconnect();
-					}
-				});
-			}
-		}
+	public getRecords(): ScribeVisitor["records"] {
+		return this.interpreter.records;
 	}
 }
