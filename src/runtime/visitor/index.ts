@@ -288,7 +288,7 @@ export class ScribeVisitor implements Interpreter {
 	}
 
 	public visitLiteralExpression(expr: LiteralExpression): TokenLiteral {
-		return expr.value;
+		return expr.dataType !== "number" ? expr.value : tonumber(expr.value);
 	}
 
 	public visitGroupingExpression(expr: GroupingExpression): TokenLiteral {
@@ -418,13 +418,13 @@ export class ScribeVisitor implements Interpreter {
 		this.resolve(stmt.body);
 	}
 
-	public visitDialogueStatement(stmt: DialogueStatement): never {
+	public visitDialogueStatement(stmt: DialogueStatement): void {
 		const characterIdentifier = stmt.actor.lexeme as string;
 		const text = this.evaluate(stmt.text) as string;
 
-		let metadata: TokenLiteral;
+		let metadata: Array<unknown>;
 		if (stmt.metadata !== undefined) {
-			metadata = this.evaluate(stmt.metadata);
+			metadata = this.evaluate(stmt.metadata) as never;
 		}
 
 		// eslint-disable-next-line prefer-const
@@ -443,13 +443,9 @@ export class ScribeVisitor implements Interpreter {
 					if (id !== undefined) {
 						this.resolve(options[id - 1]._body);
 					}
-
-					return coroutine.resume(this.interpreterCoroutine);
 				},
 			});
 		});
-
-		return coroutine.yield() as never;
 	}
 
 	public visitConditionStatement(stmt: ConditionStatement): void {
