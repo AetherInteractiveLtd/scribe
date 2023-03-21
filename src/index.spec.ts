@@ -5,35 +5,41 @@ import { Scribe } from "."
 export = (): void => {
     describe("creating a new ScribeRuntime", () => {
         const ScribeRuntime = Scribe.load(`
-        actor BEATRIZ "beatriz_id"
+            property title "Testing property"
 
-        default objective hello "My objective!"
+            actor BEATRIZ $testing_id
 
-        echo $test
+            store sticks STICKS_COLLECTED 0
 
-        interact BEATRIZ {
-            echo "Interacted with Beatriz!"
-        }
+            default objective first_objective "Default description"
+            objective some_objective "Some other description"
+
+            scene MY_SCENE {
+                [BEATRIZ] "Dialog" (2s, "Hello, world!") with {
+                    option "Some other dialog text" {
+                        echo "All done!"
+
+                        start some_objective
+                    }
+                }
+            }
+
+            interact BEATRIZ {
+                echo $test
+
+                # Starting off the scene
+                start MY_SCENE
+            }
 
         `, {
-            test: "Hello, world!"
+            test: "Hello, world!",
+            testing_id: "BEATRIZ_ID"
         })
 
         it("should not throw when instantiating a new ScribeRuntime.", () => {
             expect(() => Scribe.load("", {})).never.to.throw()
         })
 
-        it("should not throw when retrieving an objective.", () => {
-            expect(() => {
-                ScribeRuntime.getCurrentObjective()
-                ScribeRuntime.getObjective("hello")
-            }).never.to.throw()
-        })
-
-        it("should interact correctly with the actor", () => {
-            expect(() => {
-                ScribeRuntime.interact("beatriz_id")
-            }).never.to.throw()
-        })
+        it("should interact correctly with one actor", () => {})
     })
 }

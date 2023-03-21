@@ -37,15 +37,19 @@ export declare type DialogCallbackInput = {
 	step: (id?: number) => void;
 };
 
+export declare type PipeToCallbackInput = {
+	identifier: string;
+	data: unknown;
+	metadata: ScribeMetadata;
+};
+
 export declare type ObjectiveChangeCallbackInput = {
 	id: string;
 	description: string;
 };
 
-export declare type PipeToCallbackInput = {
-	identifier: string;
-	data: unknown;
-	metadata: ScribeMetadata;
+export declare type ExitCallbackInput = {
+	output: TokenLiteral | undefined;
 };
 
 export interface ScribeRuntimeImplementation {
@@ -54,15 +58,30 @@ export interface ScribeRuntimeImplementation {
 	 *
 	 * @param input DialogCallbackInput (an object containing all of the dialog info)
 	 */
-	dialogCallback: (input: DialogCallbackInput, step: (id: number) => void) => void;
+	onDialog?: (input: DialogCallbackInput, step: (id: number) => void) => void;
 
 	/**
 	 * A callback binded to handle store's values changes.
 	 *
 	 * @param config PipeToCallbackInput (an object containing all of the store's change)
+	 */
+	onChange?: (config: PipeToCallbackInput) => void;
+
+	/**
+	 * A callback binded to handle objective changes.
+	 *
+	 * @param input ObjectiveChangeCallbackInput (an object containing the newest objective)
+	 */
+	onObjectiveChange?: (input: ObjectiveChangeCallbackInput) => void;
+
+	/**
+	 * A callback binded to handle the exit of the program and return an optional output given from
+	 * the Scribe program.
+	 *
+	 * @param input ExitCallbackInput (an object containing the optional output of the program)
 	 * @returns
 	 */
-	pipeTo: (config: PipeToCallbackInput) => void;
+	onExit?: (input: ExitCallbackInput) => void;
 
 	/**
 	 * Starts the Runtime.
