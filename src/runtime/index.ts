@@ -2,6 +2,7 @@ import { MkScribe } from "@aethergames/mkscribe";
 import { ScribeEnviroment } from "../types";
 import {
 	DialogCallbackInput,
+	ExitCallbackInput,
 	InteractionJob,
 	Objective,
 	ObjectiveChangeCallbackInput,
@@ -13,9 +14,10 @@ import { TokenLiteral } from "@aethergames/mkscribe/out/mkscribe/scanner/types";
 import { ScribeVisitor, StatusInterpretationCode } from "./visitor";
 
 export class Runtime implements ScribeRuntimeImplementation {
-	public dialogCallback!: (input: DialogCallbackInput) => void;
-	public objectiveChangeCallback!: (input: ObjectiveChangeCallbackInput) => void;
-	public pipeTo!: (config: PipeToCallbackInput) => void;
+	public onDialog: ((input: DialogCallbackInput) => void) | undefined;
+	public onObjectiveChange: ((input: ObjectiveChangeCallbackInput) => void) | undefined;
+	public onChange: ((config: PipeToCallbackInput) => void) | undefined;
+	public onExit: ((input: ExitCallbackInput) => void) | undefined;
 
 	private interpreter!: ScribeVisitor;
 
@@ -28,9 +30,10 @@ export class Runtime implements ScribeRuntimeImplementation {
 		this.interpreter = new ScribeVisitor(
 			MkScribe.build(this.source),
 			{
-				onDialog: this.dialogCallback,
-				onStoreChange: this.pipeTo,
-				onObjectiveChange: this.objectiveChangeCallback,
+				onDialog: this.onDialog,
+				onStoreChange: this.onChange,
+				onObjectiveChange: this.onObjectiveChange,
+				onExit: this.onExit,
 			},
 			this.env,
 		);

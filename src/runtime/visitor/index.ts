@@ -28,11 +28,13 @@ import {
 	InteractStatement,
 	ArrayExpression,
 	DoStatement,
+	ExitExpression,
 } from "@aethergames/mkscribe/out/mkscribe/ast/types";
 import { TokenLiteral } from "@aethergames/mkscribe/out/mkscribe/scanner/types";
 import { ScribeEnviroment } from "../../types";
 import {
 	DialogCallbackInput,
+	ExitCallbackInput,
 	Objective,
 	ObjectiveChangeCallbackInput,
 	OptionStructure,
@@ -76,9 +78,10 @@ export class ScribeVisitor implements Interpreter {
 	constructor(
 		private readonly ast: Array<Statement>,
 		private readonly callbacks: {
-			onDialog: (input: DialogCallbackInput) => void;
-			onStoreChange: (config: PipeToCallbackInput) => void;
-			onObjectiveChange: (input: ObjectiveChangeCallbackInput) => void;
+			onDialog?: (input: DialogCallbackInput) => void;
+			onStoreChange?: (config: PipeToCallbackInput) => void;
+			onObjectiveChange?: (input: ObjectiveChangeCallbackInput) => void;
+			onExit?: (input: ExitCallbackInput) => void;
 		},
 		private env: ScribeEnviroment,
 	) {
@@ -320,7 +323,7 @@ export class ScribeVisitor implements Interpreter {
 
 		if (identifier in this.records.objectives) {
 			this.records.objectives.current = identifier;
-			this.callbacks.onObjectiveChange({
+			this.callbacks.onObjectiveChange?.({
 				id: identifier,
 				description: this.records.objectives[identifier].desc,
 			});
@@ -329,6 +332,12 @@ export class ScribeVisitor implements Interpreter {
 		}
 
 		return 1;
+	}
+
+	public visitExitExpression(expr: ExitExpression): TokenLiteral {
+		this.callbacks.onExit?.({ output: expr.value !== undefined ? this.evaluate(expr.value) : undefined });
+
+		return coroutine.close(this.interpreterCoroutine);
 	}
 
 	public visitExpressionStatement(stmt: ExpressionStatement): void {
