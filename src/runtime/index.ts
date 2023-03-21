@@ -99,6 +99,12 @@ export class Runtime implements ScribeRuntimeImplementation {
 	}
 
 	public async interact(id: string): Promise<void> {
+		const interaction = this.interpreter.records.interactions[id];
+
+		if (!interaction) {
+			throw `Scene specified [${id}] isn't defined on the Scribe's program.`;
+		}
+
 		if (this.interactions.has(id) === false) {
 			this.interactions.set(id, {
 				lastInteraction: 0,
@@ -109,7 +115,6 @@ export class Runtime implements ScribeRuntimeImplementation {
 		// eslint-disable-next-line prefer-const
 		let { lastInteraction, queue } = this.interactions.get(id)!;
 
-		const interaction = this.interpreter.records.interactions[id];
 		if (os.clock() - lastInteraction > this.interactionsCooldown && queue.size() === 0) {
 			lastInteraction = os.clock();
 

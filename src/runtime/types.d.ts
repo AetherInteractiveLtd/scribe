@@ -2,6 +2,8 @@ import { Statement } from "@aethergames/mkscribe";
 import { TokenLiteral } from "@aethergames/mkscribe/out/mkscribe/scanner/types";
 import { StatusInterpretationCode } from "./visitor";
 
+export declare type ScribeMetadata = Array<unknown>;
+
 export declare type InteractionJob = {
 	lastInteraction: number;
 	queue: Array<Statement>;
@@ -20,7 +22,7 @@ export declare type ScribeProgramProperties = Record<string | ScribeProperties, 
 
 export declare type OptionStructure = {
 	text?: TokenLiteral;
-	metadata?: TokenLiteral;
+	metadata?: ScribeMetadata;
 
 	/** @hidden */
 	_body: Statement;
@@ -29,7 +31,7 @@ export declare type OptionStructure = {
 export declare type DialogCallbackInput = {
 	characterIdentifier: string;
 	text: TokenLiteral;
-	metadata: TokenLiteral;
+	metadata: ScribeMetadata;
 	options: Array<OptionStructure>;
 
 	step: (id?: number) => void;
@@ -43,7 +45,7 @@ export declare type ObjectiveChangeCallbackInput = {
 export declare type PipeToCallbackInput = {
 	identifier: string;
 	data: unknown;
-	metadata: Array<unknown>;
+	metadata: ScribeMetadata;
 };
 
 export interface ScribeRuntimeImplementation {
