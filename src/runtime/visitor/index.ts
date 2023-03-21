@@ -107,7 +107,7 @@ export class ScribeVisitor implements Interpreter {
 	}
 
 	public interpret(): StatusInterpretationCode {
-		let code: StatusInterpretationCode;
+		let code: StatusInterpretationCode = StatusInterpretationCode.OK;
 
 		try {
 			this.interpreterCoroutine = coroutine.create(() => {
@@ -119,8 +119,6 @@ export class ScribeVisitor implements Interpreter {
 			warn(_error);
 
 			code = StatusInterpretationCode.FAILED;
-		} finally {
-			code = StatusInterpretationCode.OK;
 		}
 
 		return code;

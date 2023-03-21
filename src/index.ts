@@ -27,3 +27,5 @@ export namespace Scribe {
 		return new Runtime(source, env);
 	}
 }
+
+export { StatusInterpretationCode } from "./runtime/visitor";
