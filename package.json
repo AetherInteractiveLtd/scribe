@@ -45,7 +45,7 @@
 		"typescript": "^4.9.5"
 	},
 	"dependencies": {
-		"@aethergames/mkscribe": "^0.3.2-beta.1",
+		"@aethergames/mkscribe": "^0.3.3-beta.1",
 		"@rbxts/services": "^1.5.1",
 		"@rbxts/testez": "^0.4.2-ts.0"
 	}

@@ -22,16 +22,23 @@ export = (): void => {
                         echo "Stepped on the first option correctly!"
 
                         set sticks (sticks + 1)
-
-                        start some_objective
                         
                         exit 1
                     }
                 }
 
+                if true {
+                    echo "If statement first variant passed correctly."
+                }
+
+                if false {
+                    echo "This will not output."
+                } else {
+                    echo "Else statement working correctly."
+                }
+
                 if {
                     true == true -> {
-                        # Output correctly
                         echo "If statement condition passed correctly."
                     }
                 }
@@ -44,12 +51,12 @@ export = (): void => {
             interact BEATRIZ {
                 echo $test
 
-                # Starting off the scene
                 start MY_SCENE
             }
 
             trigger sticks {
                 echo "Stick's value changed!"
+                start some_objective
             }
 
             do {
