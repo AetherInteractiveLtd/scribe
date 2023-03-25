@@ -234,6 +234,9 @@ export class ScribeVisitor implements Interpreter {
 		} else {
 			switch (expr.operator.type) {
 				case TokenType.E_E:
+					if (typeOf(left) === typeOf(right)) {
+						return left === right;
+					}
 					return this.isEqual(left, right);
 
 				case TokenType.AND:
