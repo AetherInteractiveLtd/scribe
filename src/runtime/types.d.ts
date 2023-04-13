@@ -83,6 +83,8 @@ export interface ScribeRuntimeImplementation {
 	 */
 	onExit?: (input: ExitCallbackInput) => void;
 
+	onEndExecution?: () => void;
+
 	/**
 	 * Starts the Runtime.
 	 *

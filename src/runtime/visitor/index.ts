@@ -82,6 +82,7 @@ export class ScribeVisitor implements Interpreter {
 			onStoreChange?: (config: PipeToCallbackInput) => void;
 			onObjectiveChange?: (input: ObjectiveChangeCallbackInput) => void;
 			onExit?: (input: ExitCallbackInput) => void;
+			onEndExecution?: () => void;
 		},
 		private env: ScribeEnviroment,
 	) {
@@ -131,6 +132,11 @@ export class ScribeVisitor implements Interpreter {
 	public resolveBody(stmts: Array<Statement>): void {
 		for (const node of stmts) {
 			node.accept(this);
+		}
+		try {
+			this.callbacks.onEndExecution?.();
+		} catch (e) {
+			// ...
 		}
 	}
 

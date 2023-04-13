@@ -18,6 +18,7 @@ export class Runtime implements ScribeRuntimeImplementation {
 	public onObjectiveChange: ((input: ObjectiveChangeCallbackInput) => void) | undefined;
 	public onChange: ((config: PipeToCallbackInput) => void) | undefined;
 	public onExit: ((input: ExitCallbackInput) => void) | undefined;
+	public onEndExecution: (() => void) | undefined;
 
 	private interpreter!: ScribeVisitor;
 
@@ -34,6 +35,7 @@ export class Runtime implements ScribeRuntimeImplementation {
 				onStoreChange: this.onChange,
 				onObjectiveChange: this.onObjectiveChange,
 				onExit: this.onExit,
+				onEndExecution: this.onEndExecution,
 			},
 			this.env,
 		);
