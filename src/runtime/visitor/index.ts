@@ -110,11 +110,7 @@ export class ScribeVisitor implements Interpreter {
 		let code: StatusInterpretationCode = StatusInterpretationCode.OK;
 
 		try {
-			this.interpreterCoroutine = coroutine.create(() => {
-				for (const node of this.ast) this.resolve(node);
-			});
-
-			coroutine.resume(this.interpreterCoroutine);
+			for (const node of this.ast) this.resolve(node);
 		} catch (_error) {
 			warn(_error);
 
