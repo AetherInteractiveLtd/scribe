@@ -440,18 +440,16 @@ export class ScribeVisitor implements Interpreter {
 			options.push(this.resolve(option) as never);
 		}
 
-		task.spawn(() => {
-			this.callbacks.onDialog?.({
-				characterIdentifier,
-				text,
-				metadata,
-				options,
-				step: (id?: number) => {
-					if (id !== undefined) {
-						this.resolve(options[id - 1]._body);
-					}
-				},
-			});
+		this.callbacks.onDialog?.({
+			characterIdentifier,
+			text,
+			metadata: metadata!,
+			options,
+			step: (id?: number) => {
+				if (id !== undefined) {
+					this.resolve(options[id - 1]._body);
+				}
+			},
 		});
 	}
 
