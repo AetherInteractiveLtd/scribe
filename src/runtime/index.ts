@@ -99,15 +99,15 @@ export class Runtime implements ScribeRuntimeImplementation {
 		if (scene !== undefined) {
 			this.interpreter.resolve(this.interpreter.records.scenes[id]);
 		} else {
-			throw `Scene specified [${id}] isn't defined on the Scribe's program.`;
+			throw `Scene specified [${id ?? "UNDEFINED"}] isn't defined on the Scribe's program.`;
 		}
 	}
 
-	public async interact(id: string): Promise<void> {
+	public interact(id: string) {
 		const interaction = this.interpreter.records.interactions[id];
 
 		if (!interaction) {
-			throw `Scene specified [${id}] isn't defined on the Scribe's program.`;
+			throw `Scene specified [${id ?? "UNDEFINED"}] isn't defined on the Scribe's program.`;
 		}
 
 		if (this.interactions.has(id) === false) {
