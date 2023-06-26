@@ -19,29 +19,29 @@ export = (): void => {
             scene MY_SCENE {
                 [BEATRIZ] "Testing dialogs." (2s, "Hello, world!") with {
                     option "Option's dialog text." {
-                        echo "Stepped on the first option correctly!"
+                        $echo("Stepped on the first option correctly!")
 
                         set sticks (sticks + 1)
                     }
                 }
 
                 if true {
-                    echo "If statement first variant passed correctly."
+                    $echo("If statement first variant passed correctly.")
                 }
 
                 if false {
-                    echo "This will not output."
+                    $echo("This will not output.")
                 } else {
-                    echo "Else statement working correctly."
+                    $echo("Else statement working correctly.")
                 }
 
                 if {
                     true == true -> {
-                        echo "If statement condition passed correctly."
+                        $echo("If statement condition passed correctly.")
                     }
 
                     otherwise -> {
-                        echo "This otherwise shouldn't be ran."
+                        $echo("This otherwise shouldn't be ran.")
                     }
                 }
 
@@ -49,33 +49,32 @@ export = (): void => {
                     false == true -> {}
 
                     otherwise -> {
-                        echo "If statement conditions failed, otherwise tested correctly."
+                        $echo("If statement conditions failed, otherwise tested correctly.")
                     }
                 }
             }
             
             scene API_SCENE {
-                echo "Correctly played API scene."
+                $echo("Correctly played API scene.")
             }
 
             interact BEATRIZ {
-                echo $test
-
                 start MY_SCENE
             }
 
             trigger sticks {
-                echo "Stick's value changed!"
+                $echo("Stick's value changed!")
 
                 start some_objective
             }
 
             do {
-                # Simple do statement, testing the syntax
+                # Simple do statement, testing the syntax + comment test
+
+                $echo("Formatting the next piece of text..." $format("Hello, {}", "world!"))
             }
 
         `, {
-            test: "Hello, world!",
             testing_id: Beatriz_Id
         })
 

@@ -24,12 +24,12 @@ import {
 	Statement,
 	Expression,
 	PropertyStatement,
-	EchoStatement,
 	InteractStatement,
 	ArrayExpression,
 	DoStatement,
 	ExitExpression,
 	OtherwiseStatement,
+	MacroExpression,
 } from "@aethergames/mkscribe/out/mkscribe/ast/types";
 import { TokenLiteral } from "@aethergames/mkscribe/out/mkscribe/scanner/types";
 import { ScribeEnviroment } from "../../types";
@@ -43,6 +43,8 @@ import {
 } from "../types";
 import { EventListener } from "../utils";
 import { Interpreter, RefNode } from "./types";
+import format from "../utils/macros/format";
+import echo from "../utils/macros/echo";
 
 export enum StatusInterpretationCode {
 	OK,
@@ -330,6 +332,31 @@ export class ScribeVisitor implements Interpreter {
 		return 1;
 	}
 
+	public visitMacroExpression(expr: MacroExpression): TokenLiteral {
+		const macro = expr.name.lexeme;
+
+		const args = [];
+		for (const expression of expr.args) args.push(tostring(this.evaluate(expression)));
+
+		switch (macro) {
+			case "$format": {
+				const str = args.shift() as string;
+
+				if (str === undefined) {
+					throw `Expected a string to format within a $format() macro call.`;
+				}
+
+				return format(str, ...args);
+			}
+
+			default: {
+				return echo(...args);
+			}
+		}
+
+		return 1;
+	}
+
 	public visitExitExpression(expr: ExitExpression): TokenLiteral {
 		this.callbacks.onExit?.({ output: expr.value !== undefined ? this.evaluate(expr.value) : undefined });
 
@@ -555,9 +582,5 @@ export class ScribeVisitor implements Interpreter {
 		const actor = this.records.actors[ref];
 
 		this.records.interactions[actor as string] = refValue;
-	}
-
-	public visitEchoStatement(stmt: EchoStatement): void {
-		print(this.evaluate(stmt.expr));
 	}
 }
