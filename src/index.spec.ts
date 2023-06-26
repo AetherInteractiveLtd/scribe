@@ -13,6 +13,8 @@ export = (): void => {
             store sticks STICKS_COLLECTED 0
             store isFinished FLAG false
 
+            store undefined_store UNDEFINED undefined
+
             default objective first_objective "Default description"
             objective some_objective "Some other description"
 
@@ -72,6 +74,7 @@ export = (): void => {
                 # Simple do statement, testing the syntax + comment test
 
                 $echo("Formatting the next piece of text..." $format("Hello, {}", "world!"))
+                $echo("Undefined testing", not undefined_store -> "This shouldn't be it!" : "This is alright!", undefined_store, not undefined_store == false)
             }
 
         `, {

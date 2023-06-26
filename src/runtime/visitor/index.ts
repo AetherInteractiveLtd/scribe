@@ -57,7 +57,7 @@ export class ScribeVisitor implements Interpreter {
 	public refs: Record<string, RefNode>;
 
 	public records: {
-		objectivesCurrentId: 0;
+		objectivesCurrentId: number;
 
 		actors: Record<string, TokenLiteral>;
 		stores: Record<string, [value?: TokenLiteral, metadata?: Array<unknown>]>;
@@ -71,10 +71,8 @@ export class ScribeVisitor implements Interpreter {
 		triggers: Record<string, Statement>;
 	};
 
-	private readonly tracker: {
-		triggers: Array<string>;
-		event: EventListener<string>;
-	};
+	private readonly tracker: EventListener<string>;
+	private readonly triggers: Array<string>;
 
 	private interpreterCoroutine!: thread;
 
@@ -104,21 +102,21 @@ export class ScribeVisitor implements Interpreter {
 			triggers: {},
 		};
 
-		this.tracker = {
-			triggers: [],
-			event: new EventListener(),
-		};
+		this.tracker = new EventListener();
+		this.triggers = [];
 	}
 
 	public interpret(): StatusInterpretationCode {
 		let code: StatusInterpretationCode = StatusInterpretationCode.OK;
 
-		try {
-			for (const node of this.ast) this.resolve(node);
-		} catch (_error) {
-			warn(_error);
+		for (const node of this.ast) {
+			try {
+				this.resolve(node);
+			} catch (e) {
+				code = StatusInterpretationCode.FAILED;
 
-			code = StatusInterpretationCode.FAILED;
+				warn(`There has been an error while trying to interpret Scribe. More information: ${e}`);
+			}
 		}
 
 		return code;
@@ -153,22 +151,14 @@ export class ScribeVisitor implements Interpreter {
 		return tonumber(literal) !== undefined;
 	}
 
-	private match<T extends TokenType | StatementType | ExpressionType>(
-		toMatch: T,
-	): {
-		with: (...types: Array<T>) => boolean;
-	} {
-		return {
-			with: (...types: Array<T>) => {
-				for (const _type of types) {
-					if (_type === toMatch) {
-						return true;
-					}
-				}
+	private match<T extends TokenType | StatementType | ExpressionType>(toMatch: T, ...types: Array<T>): boolean {
+		for (const _type of types) {
+			if (_type === toMatch) {
+				return true;
+			}
+		}
 
-				return false;
-			},
-		};
+		return false;
 	}
 
 	public visitBinaryExpression(expr: BinaryExpression): TokenLiteral {
@@ -176,7 +166,9 @@ export class ScribeVisitor implements Interpreter {
 		let right = this.evaluate(expr.right);
 
 		if (
-			this.match(expr.operator.type).with(
+			this.match(
+				expr.operator.type,
+
 				TokenType.PLUS,
 				TokenType.MINUS,
 				TokenType.STAR,
@@ -248,7 +240,7 @@ export class ScribeVisitor implements Interpreter {
 	}
 
 	public visitUnaryExpression(expr: UnaryExpression): TokenLiteral {
-		const right = this.evaluate(expr);
+		const right = this.evaluate(expr.right);
 
 		switch (expr.operator.type) {
 			case TokenType.NOT: {
@@ -256,8 +248,8 @@ export class ScribeVisitor implements Interpreter {
 			}
 
 			case TokenType.MINUS: {
-				if (this.isNumber(right)) {
-					warn("Expected a number in the unary operation.");
+				if (!this.isNumber(right)) {
+					throw "Any other data type which is not a number, can't be negated.";
 				}
 
 				return -(right as number);
@@ -353,8 +345,6 @@ export class ScribeVisitor implements Interpreter {
 				return echo(...args);
 			}
 		}
-
-		return 1;
 	}
 
 	public visitExitExpression(expr: ExitExpression): TokenLiteral {
@@ -440,7 +430,7 @@ export class ScribeVisitor implements Interpreter {
 		this.records.stores[ref][0] = refValue;
 
 		this.callbacks.onStoreChange?.({ identifier: ref, data: refValue, metadata: metadata as never });
-		this.tracker.event.notify(ref);
+		this.tracker.notify(ref);
 	}
 
 	public visitBlockStatement(stmt: BlockStatement): void {
@@ -498,7 +488,7 @@ export class ScribeVisitor implements Interpreter {
 		for (const node of (stmt.body as BlockStatement).statements) {
 			let nodeType = node.type;
 
-			if (this.match(nodeType).with(StatementType.EXPRESSION_STATEMENT)) {
+			if (this.match(nodeType, StatementType.EXPRESSION_STATEMENT)) {
 				nodeType = (node as ExpressionStatement).expr.type as unknown as StatementType;
 			}
 
@@ -532,7 +522,7 @@ export class ScribeVisitor implements Interpreter {
 		this.records.scenes[ref] = refValue;
 	}
 
-	public visitOptionStatement(stmt: OptionStatement): never {
+	public visitOptionStatement(stmt: OptionStatement): void {
 		let text: TokenLiteral;
 		if (stmt.value) {
 			text = this.evaluate(stmt.value);
@@ -551,35 +541,45 @@ export class ScribeVisitor implements Interpreter {
 	}
 
 	public visitTriggerStatement(stmt: TriggerStatement): void {
-		if (this.match(stmt.values.type).with(ExpressionType.ARRAY)) {
-			const expressions = (stmt.values as ArrayExpression).expressions;
+		const valueType = stmt.values.type;
 
-			for (const expr of expressions) {
-				if (this.match(expr.type).with(ExpressionType.VARIABLE)) {
-					const ref = (expr as VariableExpression).name.lexeme as string;
+		let expressions = [];
+		switch (valueType) {
+			case ExpressionType.ARRAY: {
+				expressions = (stmt.values as ArrayExpression).expressions;
 
-					this.tracker.triggers.push(ref);
-					this.tracker.event.do((refId: string) => {
-						if (refId === ref) this.resolve(stmt.body);
-					});
-				}
+				break;
 			}
-		} else if (this.match(stmt.values.type).with(ExpressionType.VARIABLE)) {
-			const ref = (stmt.values as VariableExpression).name.lexeme as string;
 
-			this.tracker.triggers.push(ref);
-			this.tracker.event.do((refId: string) => {
-				if (refId === ref) this.resolve(stmt.body);
-			});
-		} else {
-			throw `Can't keep track of anything that it is not an identifier.`;
+			case ExpressionType.VARIABLE: {
+				expressions = [stmt.values];
+
+				break;
+			}
+
+			default: {
+				throw `Can't keep track of anything that it is not an array of stores or a store.`;
+			}
+		}
+
+		for (const expr of expressions) {
+			if (this.match(expr.type, ExpressionType.VARIABLE)) {
+				const ref = (expr as VariableExpression).name.lexeme as string;
+
+				this.triggers.push(ref);
+				this.tracker.do((refId: string) => {
+					if (refId === ref) this.resolve(stmt.body);
+				});
+			} else {
+				throw `Can't keep track of anything that it is not a store.`;
+			}
 		}
 	}
 
 	public visitInteractStatement(stmt: InteractStatement): void {
 		const ref = stmt.identifier.lexeme as string;
-		const refValue = stmt.body;
 		const actor = this.records.actors[ref];
+		const refValue = stmt.body;
 
 		this.records.interactions[actor as string] = refValue;
 	}
