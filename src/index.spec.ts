@@ -22,8 +22,6 @@ export = (): void => {
                         echo "Stepped on the first option correctly!"
 
                         set sticks (sticks + 1)
-                        
-                        exit 1
                     }
                 }
 
@@ -41,6 +39,18 @@ export = (): void => {
                     true == true -> {
                         echo "If statement condition passed correctly."
                     }
+
+                    otherwise -> {
+                        echo "This otherwise shouldn't be ran."
+                    }
+                }
+
+                if {
+                    false == true -> {}
+
+                    otherwise -> {
+                        echo "If statement conditions failed, otherwise tested correctly."
+                    }
                 }
             }
             
@@ -56,6 +66,7 @@ export = (): void => {
 
             trigger sticks {
                 echo "Stick's value changed!"
+
                 start some_objective
             }
 

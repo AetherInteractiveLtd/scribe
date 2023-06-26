@@ -29,6 +29,7 @@ import {
 	ArrayExpression,
 	DoStatement,
 	ExitExpression,
+	OtherwiseStatement,
 } from "@aethergames/mkscribe/out/mkscribe/ast/types";
 import { TokenLiteral } from "@aethergames/mkscribe/out/mkscribe/scanner/types";
 import { ScribeEnviroment } from "../../types";
@@ -133,11 +134,6 @@ export class ScribeVisitor implements Interpreter {
 		for (const node of stmts) {
 			node.accept(this);
 		}
-		try {
-			this.callbacks.onEndExecution?.();
-		} catch (e) {
-			// ...
-		}
 	}
 
 	private checkTruthiness(literal: TokenLiteral): boolean {
@@ -148,7 +144,7 @@ export class ScribeVisitor implements Interpreter {
 	}
 
 	private isEqual(left: TokenLiteral, right: TokenLiteral): boolean {
-		return this.checkTruthiness(left) === this.checkTruthiness(right);
+		return left === right;
 	}
 
 	private isNumber(literal: TokenLiteral): boolean {
@@ -236,7 +232,7 @@ export class ScribeVisitor implements Interpreter {
 		} else {
 			switch (expr.operator.type) {
 				case TokenType.E_E:
-					return left === right; // TODO: Revise Truthiness evaluation.
+					return this.isEqual(left, right);
 
 				case TokenType.AND:
 					return this.checkTruthiness(left) && this.checkTruthiness(right);
@@ -415,6 +411,7 @@ export class ScribeVisitor implements Interpreter {
 		}
 
 		this.records.stores[ref][0] = refValue;
+
 		this.callbacks.onStoreChange?.({ identifier: ref, data: refValue, metadata: metadata as never });
 		this.tracker.event.notify(ref);
 	}
@@ -436,8 +433,7 @@ export class ScribeVisitor implements Interpreter {
 			metadata = this.evaluate(stmt.metadata) as never;
 		}
 
-		// eslint-disable-next-line prefer-const
-		let options: Array<OptionStructure> = [];
+		const options: Array<OptionStructure> = [];
 		for (const option of stmt.options) {
 			options.push(this.resolve(option) as never);
 		}
@@ -453,14 +449,6 @@ export class ScribeVisitor implements Interpreter {
 				}
 			},
 		});
-	}
-
-	public visitConditionStatement(stmt: ConditionStatement): void {
-		const check = this.evaluate(stmt.condition);
-
-		if (this.checkTruthiness(check)) {
-			this.resolve(stmt.body);
-		}
 	}
 
 	public visitIfStatement(stmt: IfStatement): void {
@@ -480,7 +468,34 @@ export class ScribeVisitor implements Interpreter {
 			}
 		}
 
-		this.resolve(stmt.body);
+		for (const node of (stmt.body as BlockStatement).statements) {
+			let nodeType = node.type;
+
+			if (this.match(nodeType).with(StatementType.EXPRESSION_STATEMENT)) {
+				nodeType = (node as ExpressionStatement).expr.type as unknown as StatementType;
+			}
+
+			switch (nodeType) {
+				case StatementType.CONDITION: {
+					const conditionStatement = (node as ExpressionStatement).expr as unknown as ConditionStatement;
+					const check = this.evaluate(conditionStatement.condition);
+
+					if (this.checkTruthiness(check)) {
+						return this.resolve(conditionStatement.body);
+					}
+
+					break;
+				}
+
+				case StatementType.OTHERWISE: {
+					return this.resolve((node as OtherwiseStatement).body);
+				}
+
+				default: {
+					throw "In a switch-case statement it's only permitted to have conditions.";
+				}
+			}
+		}
 	}
 
 	public visitSceneStatement(stmt: SceneStatement): void {
