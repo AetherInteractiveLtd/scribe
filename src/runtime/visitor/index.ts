@@ -40,6 +40,7 @@ import {
 	ObjectiveChangeCallbackInput,
 	OptionStructure,
 	PipeToCallbackInput,
+	ScribeCallbacks,
 } from "../types";
 import { EventListener } from "../utils";
 import { Interpreter, RefNode } from "./types";
@@ -57,7 +58,7 @@ export class ScribeVisitor implements Interpreter {
 	public refs: Record<string, RefNode>;
 
 	public records: {
-		objectivesCurrentId: number;
+		currentId: number;
 
 		actors: Record<string, TokenLiteral>;
 		stores: Record<string, [value?: TokenLiteral, metadata?: Array<unknown>]>;
@@ -71,27 +72,22 @@ export class ScribeVisitor implements Interpreter {
 		triggers: Record<string, Statement>;
 	};
 
-	private readonly tracker: EventListener<string>;
+	public readonly tracker: EventListener<string>;
+
 	private readonly triggers: Array<string>;
 
 	private interpreterCoroutine!: thread;
 
 	constructor(
 		private readonly ast: Array<Statement>,
-		private readonly callbacks: {
-			onDialog?: (input: DialogCallbackInput) => void;
-			onStoreChange?: (config: PipeToCallbackInput) => void;
-			onObjectiveChange?: (input: ObjectiveChangeCallbackInput) => void;
-			onExit?: (input: ExitCallbackInput) => void;
-			onEndExecution?: () => void;
-		},
+		private readonly callbacks: ScribeCallbacks,
 		private env: ScribeEnviroment,
 	) {
 		this.programProperties = {};
 		this.refs = {};
 
 		this.records = {
-			objectivesCurrentId: 0,
+			currentId: 0,
 
 			actors: {},
 			stores: {},
@@ -118,6 +114,8 @@ export class ScribeVisitor implements Interpreter {
 				warn(`There has been an error while trying to interpret Scribe. More information: ${e}`);
 			}
 		}
+
+		this.callbacks.onEndExecution?.(code);
 
 		return code;
 	}
@@ -277,6 +275,7 @@ export class ScribeVisitor implements Interpreter {
 
 	public visitEnvironmentAccessor(expr: EnvironmentAccessor): TokenLiteral {
 		const lexeme = expr.name.literal as string;
+
 		return this.env[lexeme.sub(2, lexeme.size())] as TokenLiteral;
 	}
 
@@ -335,7 +334,7 @@ export class ScribeVisitor implements Interpreter {
 				const str = args.shift() as string;
 
 				if (str === undefined) {
-					throw `Expected a string to format within a $format() macro call.`;
+					throw `Expected a string to format within a $format() macro invoke.`;
 				}
 
 				return format(str, ...args);
@@ -381,10 +380,10 @@ export class ScribeVisitor implements Interpreter {
 		}
 
 		this.records.objectives[objective] = {
-			id: ++this.records.objectivesCurrentId,
+			id: ++this.records.currentId,
 			name: objective,
 			desc: objectiveDesc as string,
-			active: objective === this.records.objectives.current!,
+			active: isDefault ?? false,
 		};
 	}
 
@@ -402,11 +401,11 @@ export class ScribeVisitor implements Interpreter {
 
 		const ref = stmt.name.lexeme as string;
 		const refIdentifier = stmt.identifier.lexeme as string;
-		const refValue = [value, metadata];
+		const refValue = [value, metadata] as never;
 
-		this.records.stores[ref] = refValue as never;
+		this.records.stores[ref] = refValue;
+
 		this.refs[refIdentifier] = {
-			refValue,
 			ref,
 			_next: this.refs[refIdentifier],
 		};
@@ -420,17 +419,16 @@ export class ScribeVisitor implements Interpreter {
 			refValue = this.evaluate(stmt.value);
 		}
 
-		const store = this.records.stores[ref];
-
-		let metadata: TokenLiteral;
-		if (store[1] !== undefined) {
-			metadata = store[1];
-		}
-
 		this.records.stores[ref][0] = refValue;
 
-		this.callbacks.onStoreChange?.({ identifier: ref, data: refValue, metadata: metadata as never });
-		this.tracker.notify(ref);
+		{
+			this.tracker.notify(ref);
+			this.callbacks.onChange?.({
+				identifier: ref,
+				newValue: refValue,
+				metadata: this.records.stores[ref][1] as never,
+			});
+		}
 	}
 
 	public visitBlockStatement(stmt: BlockStatement): void {
@@ -455,17 +453,19 @@ export class ScribeVisitor implements Interpreter {
 			options.push(this.resolve(option) as never);
 		}
 
-		this.callbacks.onDialog?.({
-			characterIdentifier,
-			text,
-			metadata: metadata!,
-			options,
-			step: (id?: number) => {
+		this.callbacks.onDialog?.(
+			{
+				characterIdentifier,
+				text,
+				metadata: metadata!,
+				options,
+			},
+			(id?: number) => {
 				if (id !== undefined) {
 					this.resolve(options[id - 1]._body);
 				}
 			},
-		});
+		);
 	}
 
 	public visitIfStatement(stmt: IfStatement): void {

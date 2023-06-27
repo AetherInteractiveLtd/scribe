@@ -4,8 +4,8 @@ import { ModuleSource, ScribeEnviroment, StringSource, StringValueSource } from 
 export namespace Scribe {
 	export function load(file: string | StringValue | ModuleScript, env: ScribeEnviroment): Runtime {
 		const toRetrieveFrom = typeOf(file);
-		let source!: string;
 
+		let source!: string;
 		switch (toRetrieveFrom) {
 			case "Instance": {
 				if ((file as Instance).IsA("ModuleScript")) {

@@ -8,45 +8,60 @@ import {
 	ObjectiveChangeCallbackInput,
 	PipeToCallbackInput,
 	ScribeProgramProperties,
-	ScribeRuntimeImplementation,
+	ScribeProperties,
+	ScribeCallbacks,
 } from "./types";
 import { TokenLiteral } from "@aethergames/mkscribe/out/mkscribe/scanner/types";
 import { ScribeVisitor, StatusInterpretationCode } from "./visitor";
 
-export class Runtime implements ScribeRuntimeImplementation {
-	public onDialog: ((input: DialogCallbackInput) => void) | undefined;
-	public onObjectiveChange: ((input: ObjectiveChangeCallbackInput) => void) | undefined;
-	public onChange: ((config: PipeToCallbackInput) => void) | undefined;
-	public onExit: ((input: ExitCallbackInput) => void) | undefined;
-	public onEndExecution: (() => void) | undefined;
+export class Runtime implements ScribeCallbacks {
+	public onDialog?: (input: DialogCallbackInput, step: (id?: number) => void) => void;
+	public onObjectiveChange?: (input: ObjectiveChangeCallbackInput) => void;
+	public onChange?: (config: PipeToCallbackInput) => void;
+	public onExit?: (input: ExitCallbackInput) => void;
+	public onEndExecution?: (statusCode: StatusInterpretationCode) => void;
 
-	private interpreter!: ScribeVisitor;
+	private readonly interpreter: ScribeVisitor;
+	private records: ScribeVisitor["records"];
 
 	private interactions: Map<string, InteractionJob> = new Map();
 	private interactionsCooldown = 1 / 60;
 
-	constructor(private readonly source: string, private readonly env: ScribeEnviroment) {}
-
-	public start(): StatusInterpretationCode {
+	constructor(public readonly source: string, public readonly env: ScribeEnviroment) {
 		this.interpreter = new ScribeVisitor(
-			MkScribe.build(this.source),
+			MkScribe.build(source),
 			{
 				onDialog: this.onDialog,
-				onStoreChange: this.onChange,
+				onChange: this.onChange,
 				onObjectiveChange: this.onObjectiveChange,
 				onExit: this.onExit,
 				onEndExecution: this.onEndExecution,
 			},
-			this.env,
+			env,
 		);
 
+		this.records = this.interpreter.records;
+	}
+
+	/**
+	 *
+	 */
+	public start(): StatusInterpretationCode {
 		return this.interpreter.interpret();
 	}
 
+	/**
+	 * Retrieves an objective's data and metadata.
+	 *
+	 * @param objective an objectives identifier.
+	 */
 	public getObjective(objective: string): Objective | undefined {
 		return this.interpreter.records.objectives[objective];
 	}
 
+	/**
+	 * Retrieves current objective (active).
+	 */
 	public getCurrentObjective(): Objective | undefined {
 		const current = this.interpreter.records.objectives.current;
 
@@ -55,70 +70,174 @@ export class Runtime implements ScribeRuntimeImplementation {
 		}
 	}
 
-	public getProperty(property: string): TokenLiteral {
+	/**
+	 * Sets an objective to the current active one within Scribe.
+	 *
+	 * @param objective the objective to set to.
+	 */
+	public setCurrentObjective(objective: string): void {
+		const objct = this.interpreter.records.objectives[objective];
+
+		if (objct !== undefined) {
+			this.interpreter.records.objectives.current = objective;
+		} else {
+			throw `Can't set ${objective} to current active objective, because it doesn't exists within the Scribe Program.`;
+		}
+
+		return undefined;
+	}
+
+	/**
+	 * Retrieve's a property's value.
+	 *
+	 * @param property property's identifier.
+	 */
+	public getProperty(property: string | ScribeProperties): TokenLiteral {
 		return this.interpreter.programProperties[property];
 	}
 
+	/**
+	 * @returns all the Program properties.
+	 */
 	public getProperties(): ScribeProgramProperties {
 		return this.interpreter.programProperties;
 	}
 
-	public incrementStore(valueTo: string, increment: number): void {
-		let head = this.interpreter.refs[valueTo];
+	/**
+	 * It retrieves current interactions, actors, stores, etc. which is defined within the Scribe's Program.
+	 */
+	public getRecords(): ScribeVisitor["records"] {
+		return this.records;
+	}
 
-		while (head !== undefined) {
-			const { ref } = head;
+	/**
+	 * Increments an store's value.
+	 *
+	 * @param ref the reference, may be an store's identifier or the Linking Reference.
+	 * @param increment value of increment.
+	 */
+	public incrementStore(ref: string, increment: number): void {
+		if (typeIs(increment, "number")) throw `Increment value given seems to not be of type number, can't increment.`;
 
-			if (typeOf(this.interpreter.records.stores[ref][0]) === "number") {
-				(this.interpreter.records.stores[ref][0] as number) += increment;
-			} else {
-				warn(`[Interpreter:incrementValue]: ${ref} isn't of type number, it can't be incremented.`);
+		if (this.records.stores[ref] !== undefined) {
+			const [refValue, refMetadata] = this.records.stores[ref];
+
+			if (type(refValue) !== "number") {
+				throw `Can't increment [${ref}] since it is not of type number.`;
 			}
 
-			head = head._next;
+			const incr = refValue + increment;
+			const data = [incr, refMetadata] as never;
+
+			this.records.stores[ref] = data;
+			this.notifyChange(ref, {
+				identifier: ref,
+				metadata: refMetadata as Array<unknown>,
+				newValue: incr,
+				oldValue: refValue,
+			});
+		} else {
+			let head = this.interpreter.refs[ref];
+			if (head === undefined) throw `Reference given doesn't seem to be an store, nor a Linking Reference.`;
+
+			while (head) {
+				const ref = head.ref;
+				const [refValue, refMetadata] = this.records.stores[ref];
+
+				if (type(refValue)) {
+					throw `Can't increment [${ref}] since it is not of type number.`;
+				}
+
+				const incr = refValue + increment;
+				const data = [incr, refMetadata] as never;
+
+				this.records.stores[ref] = data;
+				this.notifyChange(ref, {
+					identifier: ref,
+					metadata: refMetadata as Array<unknown>,
+					newValue: incr,
+					oldValue: refValue,
+				});
+
+				head = head._next;
+			}
 		}
 	}
 
-	public setStore(valueTo: string, value: unknown): void {
-		let head = this.interpreter.refs[valueTo];
+	/**
+	 * Sets an store's value to the value specified (overrides it).
+	 *
+	 * @param ref the reference, may be an store's identifier or the Linking Reference.
+	 * @param value an override value.
+	 */
+	public setStore(ref: string, value: unknown): void {
+		if (this.records.stores[ref] !== undefined) {
+			const [, refMetadata] = this.records.stores[ref];
+			const data = [value, refMetadata] as never;
 
-		while (head !== undefined) {
-			this.interpreter.records.stores[head.ref][0] = value as TokenLiteral;
+			this.records.stores[ref] = data;
+			this.notifyChange(ref, {
+				identifier: ref,
+				metadata: refMetadata as Array<unknown>,
+				newValue: data,
+				oldValue: value,
+			});
+		} else {
+			let head = this.interpreter.refs[ref];
+			if (head === undefined) throw `Reference given doesn't seem to be an store, nor a Linking Reference.`;
 
-			head = head._next;
+			while (head) {
+				ref = head.ref;
+
+				const [, refMetadata] = this.records.stores[ref];
+				const data = [value, refMetadata] as never;
+
+				this.records.stores[ref] = data;
+				this.notifyChange(ref, {
+					identifier: ref,
+					metadata: refMetadata as Array<unknown>,
+					newValue: data,
+					oldValue: value,
+				});
+
+				head = head._next;
+			}
 		}
 	}
 
-	public setCurrentObjective(objective: string): void {
-		this.interpreter.records.objectives.current = objective;
-	}
-
-	public play(id: string): void {
-		const scene = this.interpreter.records.scenes[id];
+	/**
+	 * Plays a scene, which is specified by the scene's identifier specified.
+	 *
+	 * @param ref scene's identifier.
+	 */
+	public play(ref: string): void {
+		const scene = this.interpreter.records.scenes[ref];
 
 		if (scene !== undefined) {
-			this.interpreter.resolve(this.interpreter.records.scenes[id]);
+			this.interpreter.resolve(this.interpreter.records.scenes[ref]);
 		} else {
-			throw `Scene specified [${id ?? "UNDEFINED"}] isn't defined on the Scribe's program.`;
+			throw `Scene specified [${ref ?? "UNDEFINED"}] isn't defined on the Scribe's program.`;
 		}
 	}
 
-	public interact(id: string) {
-		const interaction = this.interpreter.records.interactions[id];
+	/**
+	 * Triggers an interaction with the actor specified.
+	 *
+	 * @param actor actor's id.
+	 */
+	public interact(actor: string) {
+		const interaction = this.interpreter.records.interactions[actor];
+		if (interaction === undefined) throw `Actor specified [${actor}] isn't defined within the Scribe's program.`;
 
-		if (!interaction) {
-			throw `Scene specified [${id ?? "UNDEFINED"}] isn't defined on the Scribe's program.`;
-		}
-
-		if (this.interactions.has(id) === false) {
-			this.interactions.set(id, {
+		if (!this.interactions.has(actor)) {
+			this.interactions.set(actor, {
 				lastInteraction: 0,
 				queue: new Array(),
 			});
 		}
 
 		// eslint-disable-next-line prefer-const
-		let { lastInteraction, queue } = this.interactions.get(id)!;
+		let { lastInteraction, queue } = this.interactions.get(actor)!;
 
 		if (os.clock() - lastInteraction > this.interactionsCooldown && queue.size() === 0) {
 			lastInteraction = os.clock();
@@ -127,8 +246,7 @@ export class Runtime implements ScribeRuntimeImplementation {
 		} else {
 			queue.push(interaction);
 
-			// eslint-disable-next-line no-constant-condition
-			while (true) {
+			while (interaction) {
 				if (os.clock() - lastInteraction > this.interactionsCooldown && queue[1] === interaction) {
 					return this.interpreter.resolve(interaction);
 				} else {
@@ -138,7 +256,15 @@ export class Runtime implements ScribeRuntimeImplementation {
 		}
 	}
 
-	public getRecords(): ScribeVisitor["records"] {
-		return this.interpreter.records;
+	/**
+	 * Notifies a change to Scribe and to the API.
+	 *
+	 * @param ref reference.
+	 * @param changeData all data needed for invoking an OnChange callback.
+	 */
+	private notifyChange(ref: string, changeData: PipeToCallbackInput): void {
+		this.interpreter.tracker.notify(ref);
+
+		return this.onChange?.(changeData);
 	}
 }

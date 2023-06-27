@@ -33,13 +33,12 @@ export declare type DialogCallbackInput = {
 	text: TokenLiteral;
 	metadata: ScribeMetadata;
 	options: Array<OptionStructure>;
-
-	step: (id?: number) => void;
 };
 
 export declare type PipeToCallbackInput = {
 	identifier: string;
-	data: unknown;
+	newValue: unknown;
+	oldValue?: unknown;
 	metadata: ScribeMetadata;
 };
 
@@ -52,13 +51,13 @@ export declare type ExitCallbackInput = {
 	output: TokenLiteral | undefined;
 };
 
-export interface ScribeRuntimeImplementation {
+export interface ScribeCallbacks {
 	/**
-	 * A callback to handle dialog.
+	 * A callback binded to handle dialog.
 	 *
 	 * @param input DialogCallbackInput (an object containing all of the dialog info)
 	 */
-	onDialog?: (input: DialogCallbackInput, step: (id: number) => void) => void;
+	onDialog?: (input: DialogCallbackInput, step: (id?: number) => void) => void;
 
 	/**
 	 * A callback binded to handle store's values changes.
@@ -79,72 +78,11 @@ export interface ScribeRuntimeImplementation {
 	 * the Scribe program.
 	 *
 	 * @param input ExitCallbackInput (an object containing the optional output of the program)
-	 * @returns
 	 */
 	onExit?: (input: ExitCallbackInput) => void;
 
-	onEndExecution?: () => void;
-
 	/**
-	 * Starts the Runtime.
-	 *
-	 * Workflow is to set `pipeTo` and `dialogCallback` before running `.start`.
+	 * A callback binded to handle the end execution of the program, when Scribe it is done running.
 	 */
-	start(): StatusInterpretationCode;
-
-	getObjective(objective: string): Objective | undefined;
-
-	/**
-	 *
-	 */
-	getCurrentObjective(): Objective | undefined;
-
-	/**
-	 * Retrieve's a property's value.
-	 *
-	 * @param property string
-	 */
-	getProperty(property: string): TokenLiteral;
-
-	/**
-	 * @returns all the Program properties.
-	 */
-	getProperties(): ScribeProgramProperties;
-
-	/**
-	 * Method to increment a store's value.
-	 *
-	 * @param valueTo string
-	 * @param increment number
-	 */
-	incrementStore(valueTo: string, increment: number): void;
-
-	/**
-	 * Method to set a store's value.
-	 *
-	 * @param valueTo string
-	 * @param value unknown
-	 */
-	setStore(valueTo: string, value: unknown): void;
-
-	/**
-	 * Sets the current objective, another util function.
-	 *
-	 * @param objective string
-	 */
-	setCurrentObjective(objective: string): void;
-
-	/**
-	 * Resolves a scene by "playing" it.
-	 *
-	 * @param scene string
-	 */
-	play(scene: string): void;
-
-	/**
-	 * Initialises an interaction statement.
-	 *
-	 * @param id actor's id.
-	 */
-	interact(id: string): void;
+	onEndExecution?: (statusCode: StatusInterpretationCode) => void;
 }
