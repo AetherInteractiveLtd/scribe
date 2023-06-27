@@ -1,8 +1,7 @@
 import { ExpressionVisitor, StatementVisitor } from "@aethergames/mkscribe";
 import { TokenLiteral } from "@aethergames/mkscribe/out/mkscribe/scanner/types";
 
-export declare type RefNode = {
-	refValue: TokenLiteral;
+declare type RefNode = {
 	ref: string;
 	_next: RefNode;
 };
